@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
@@ -24,9 +25,8 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 
-var secret = "thisissecret";
 userSchema.plugin(encrypt, {
-  secret: secret,
+  secret: process.env.SECRET,
   encryptedFields: ["password"],
 });
 
@@ -73,7 +73,7 @@ app.post("/login", (req, res) => {
         console.log("Login successfully");
       }
     } else {
-      console.log(err);
+      console.log("Login fail");
     }
   });
 });
