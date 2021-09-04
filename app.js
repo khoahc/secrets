@@ -1,8 +1,7 @@
-// require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-// const encrypt = require("mongoose-encryption");
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const port = process.env.PORT || 3000;
 
@@ -26,11 +25,6 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 
-// userSchema.plugin(encrypt, {
-//   secret: process.env.SECRET,
-//   encryptedFields: ["password"],
-// });
-
 const User = new mongoose.model("User", userSchema);
 
 app.get("/", (req, res) => {
@@ -50,28 +44,34 @@ app.get("/secrets", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  const user = new User({
-    email: req.body.username,
-    password: md5(req.body.password),
-  });
-  user.save((err) => {
-    if (!err) {
-      res.render("secrets");
-      console.log("Registered successfully");
-    } else {
-      console.log(err);
-    }
+  bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+    const user = new User({
+      email: req.body.username,
+      password: hash,
+    });
+    user.save((err) => {
+      if (!err) {
+        res.render("secrets");
+        console.log("Registered successfully");
+      } else {
+        console.log(err);
+      }
+    });
   });
 });
 
 app.post("/login", (req, res) => {
   const username = req.body.username;
-  const password = md5(req.body.password);
+  const password = req.body.password;
   User.findOne({ email: username }, (err, foundUser) => {
     if (!err) {
-      if (foundUser.password === password) {
-        res.render("secrets");
-        console.log("Login successfully");
+      if (foundUser) {
+        bcrypt.compare(password, foundUser.password, function (err, result) {
+          if (result === true) {
+            res.render("secrets");
+            console.log("Login successfully");
+          }
+        });
       }
     } else {
       console.log("Login fail");
